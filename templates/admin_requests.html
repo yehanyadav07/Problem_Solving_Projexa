@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Admin Requests — Smart E-Waste{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 fade-in">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-shield-check me-2" style="color: var(--neon-2);"></i>Admin Request Management</h2>
+        <p class="text-muted mb-0">Mark pending recycling requests as collected.</p>
+    </div>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back to Dashboard</a>
+</div>
+
+<div class="stats-grid fade-in" style="margin-bottom: 2rem;">
+    <div class="stat-card">
+        <span class="stat-value">{{ requests|length }}</span>
+        <span class="stat-label">Total Requests</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value">{{ requests|selectattr('status', 'equalto', 'Pending')|list|length }}</span>
+        <span class="stat-label">Pending</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value">{{ requests|selectattr('status', 'equalto', 'Collected')|list|length }}</span>
+        <span class="stat-label">Collected</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value">{{ requests|selectattr('status', 'equalto', 'Cancelled')|list|length }}</span>
+        <span class="stat-label">Cancelled</span>
+    </div>
+</div>
+
+<div class="card shadow-sm fade-in">
+    <div class="card-body">
+        {% if requests %}
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Request ID</th>
+                            <th>User</th>
+                            <th>Item Type</th>
+                            <th>Status</th>
+                            <th>Credits</th>
+                            <th>Requested At</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in requests %}
+                            <tr>
+                                <td><span style="color: var(--muted); font-weight: 500;">#{{ req.id }}</span></td>
+                                <td><i class="bi bi-person-circle me-1" style="color: var(--neon-2); opacity: 0.6;"></i>{{ req.user.username if req.user else req.user_id }}</td>
+                                <td><i class="bi bi-cpu me-1" style="color: var(--neon); opacity: 0.6;"></i>{{ req.item_type }}</td>
+                                <td>
+                                    <span class="badge {% if req.status == 'Collected' %}bg-primary{% elif req.status == 'Cancelled' %}bg-secondary{% else %}bg-warning text-dark{% endif %}">
+                                        {% if req.status == 'Pending' %}<span class="status-dot pending"></span>{% elif req.status == 'Collected' %}<span class="status-dot active"></span>{% endif %}
+                                        {{ req.status }}
+                                    </span>
+                                </td>
+                                <td><span style="color: var(--neon); font-weight: 600;">+{{ req.credits_awarded }}</span></td>
+                                <td>{{ req.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                                <td>
+                                    {% if req.status != 'Collected' and req.status != 'Cancelled' %}
+                                        <form method="post" action="{{ url_for('mark_request_collected', request_id=req.id) }}">
+                                            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-check-circle me-1"></i>Mark Collected</button>
+                                        </form>
+                                    {% else %}
+                                        <span class="text-muted small"><i class="bi bi-check-all me-1"></i>No action</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox" style="font-size: 3rem; color: var(--muted); opacity: 0.3;"></i>
+                <p class="text-muted mt-3 mb-0">No requests found.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
