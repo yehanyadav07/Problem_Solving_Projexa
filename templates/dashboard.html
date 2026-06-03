@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Smart E-Waste{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 fade-in">
+    <div>
+        <h2 class="mb-1">
+            <i class="bi bi-grid-1x2 me-2" style="color: var(--neon);"></i>Welcome, {{ user.username }}
+        </h2>
+        <p class="text-muted mb-0">Track your recycling activity and Eco-Credits.</p>
+    </div>
+    <div class="d-flex gap-2">
+        {% if is_admin_user %}
+            <a href="{{ url_for('admin_requests') }}" class="btn btn-outline-primary">
+                <i class="bi bi-shield-check me-1"></i>Admin Requests
+            </a>
+        {% endif %}
+        <a href="{{ url_for('scanner') }}" class="btn btn-success scan-pulse">
+            <i class="bi bi-cpu me-1"></i>Scan New E-Waste
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4 fade-in">
+    <div class="col-md-6">
+        <div class="card eco-credits-card h-100">
+            <div class="card-body d-flex align-items-center gap-4 py-4">
+                <div style="font-size: 3rem; opacity: 0.6; color: var(--neon);">
+                    <i class="bi bi-gem"></i>
+                </div>
+                <div>
+                    <h5 class="card-title mb-1" style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em;">Confirmed Eco-Credits</h5>
+                    <p class="eco-credits-value mb-0">{{ user.eco_credits }}</p>
+                    <p class="mb-0 mt-1" style="font-size: 0.78rem; color: var(--text-secondary);">Awarded after successful collection</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100" style="border-color: rgba(245,166,35,0.2); background: linear-gradient(165deg, rgba(32,38,51,0.45), rgba(20,26,37,0.5));">
+            <div class="card-body d-flex align-items-center gap-4 py-4">
+                <div style="font-size: 3rem; opacity: 0.5; color: #f5a623;">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+                <div>
+                    <h5 class="card-title mb-1" style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em;">Pending Credits</h5>
+                    <p class="mb-0" style="font-family: var(--font-display); font-size: 2.8rem; font-weight: 800; color: #f5a623; line-height: 1;">{{ pending_credits }}</p>
+                    <p class="mb-0 mt-1" style="font-size: 0.78rem; color: var(--text-secondary);">Awaiting pickup confirmation</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="stats-grid fade-in" style="margin-bottom: 2rem;">
+    <div class="stat-card">
+        <span class="stat-value">{{ requests|length }}</span>
+        <span class="stat-label">Total Requests</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value">{{ requests|selectattr('status', 'equalto', 'Pending')|list|length }}</span>
+        <span class="stat-label">Pending</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value">{{ requests|selectattr('status', 'equalto', 'Collected')|list|length }}</span>
+        <span class="stat-label">Collected</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value" style="color: #f5a623;">+{{ pending_credits }}</span>
+        <span class="stat-label">Pending Credits</span>
+    </div>
+</div>
+
+<div class="card fade-in">
+    <div class="card-body">
+        <h5 class="card-title mb-3">
+            <i class="bi bi-clock-history me-2" style="color: var(--neon-2);"></i>Recycling Request History
+        </h5>
+        {% if requests %}
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Item Type</th>
+                            <th>Recycler</th>
+                            <th>Status</th>
+                            <th>Credits Awarded</th>
+                            <th>Requested At</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in requests %}
+                            <tr>
+                                <td>
+                                    <i class="bi bi-cpu me-2" style="color: var(--neon); opacity: 0.7;"></i>{{ req.item_type }}
+                                </td>
+                                <td>
+                                    {% if req.center %}
+                                        <div>{{ req.center.name }}</div>
+                                        <a class="small" href="https://www.google.com/maps/search/?api=1&query={{ req.center.latitude }},{{ req.center.longitude }}" target="_blank" rel="noopener">
+                                            <i class="bi bi-geo-alt me-1"></i>Open Map
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge {% if req.status == 'Collected' %}bg-primary{% elif req.status == 'Cancelled' %}bg-secondary{% else %}bg-warning text-dark{% endif %}">
+                                        {% if req.status == 'Pending' %}<span class="status-dot pending"></span>{% elif req.status == 'Collected' %}<span class="status-dot active"></span>{% endif %}
+                                        {{ req.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span style="color: var(--neon); font-weight: 600;">+{{ req.credits_awarded }}</span>
+                                </td>
+                                <td>{{ req.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                                <td>
+                                    {% if req.status == 'Pending' %}
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-outline-danger cancel-btn"
+                                            data-cancel-url="{{ url_for('cancel_pickup', request_id=req.id) }}"
+                                            data-item-type="{{ req.item_type }}"
+                                            onclick="openCancelModal(this)"
+                                        >
+                                            <i class="bi bi-x-circle me-1"></i>Cancel
+                                        </button>
+                                    {% else %}
+                                        <span class="text-muted small">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox" style="font-size: 3rem; color: var(--muted); opacity: 0.4;"></i>
+                <p class="text-muted mt-3 mb-0">No recycling requests yet. Start by scanning an item.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div id="cancelOverlay" style="
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(7, 11, 20, 0.85);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    align-items: center;
+    justify-content: center;
+">
+    <div style="
+        background: linear-gradient(165deg, rgba(32,38,51,0.98) 0%, rgba(20,26,37,0.99) 100%);
+        border: 1px solid rgba(65,222,253,0.18);
+        border-radius: 1rem;
+        box-shadow: 0 24px 60px rgba(0,0,0,0.7);
+        padding: 2rem;
+        width: 100%;
+        max-width: 420px;
+        margin: 1rem;
+    ">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+            <h5 style="margin:0; font-family:var(--font-display); color:var(--text);">
+                <i class="bi bi-exclamation-triangle me-2" style="color:var(--error);"></i>Confirm Cancellation
+            </h5>
+            <button onclick="closeCancelModal()" style="background:none;border:none;color:var(--text-secondary);font-size:1.4rem;cursor:pointer;line-height:1;padding:0;">&times;</button>
+        </div>
+        <p style="color:var(--text); margin-bottom:0.5rem;">
+            Are you sure you want to cancel pickup for <strong id="cancelItemType" style="color:var(--neon);">this item</strong>?
+        </p>
+        <p style="color:var(--text-secondary); font-size:0.85rem; margin-bottom:1.5rem;">
+            <i class="bi bi-info-circle me-1"></i>This pickup will be removed. No credits have been awarded yet.
+        </p>
+        <div style="display:flex; gap:0.75rem; justify-content:flex-end;">
+            <button onclick="closeCancelModal()" class="btn btn-outline-secondary">Keep Pickup</button>
+            <form id="cancelPickupForm" method="post" style="margin:0;">
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-x-circle me-1"></i>Yes, Cancel Pickup
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function openCancelModal(btn) {
+        document.getElementById('cancelPickupForm').action = btn.getAttribute('data-cancel-url');
+        document.getElementById('cancelItemType').textContent = btn.getAttribute('data-item-type') || 'this item';
+        var overlay = document.getElementById('cancelOverlay');
+        overlay.style.display = 'flex';
+    }
+    function closeCancelModal() {
+        document.getElementById('cancelOverlay').style.display = 'none';
+    }
+    document.getElementById('cancelOverlay').addEventListener('click', function(e) {
+        if (e.target === this) closeCancelModal();
+    });
+</script>
+{% endblock %}
