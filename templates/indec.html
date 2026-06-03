@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Smart E-Waste — AI-Powered Recycling Platform{% endblock %}
+{% block content %}
+<div class="hero-card fade-in">
+    <div class="container-fluid py-3">
+        <div class="row align-items-center">
+            <div class="col-lg-7">
+                <p class="text-uppercase mb-2" style="font-size: 0.78rem; letter-spacing: 0.12em; color: var(--neon); font-weight: 600;">
+                    <i class="bi bi-lightning-charge-fill"></i> The Neon Restoration
+                </p>
+                <h1 class="display-6 fw-bold mb-3">Smart E-Waste Management &amp; Recycling</h1>
+                <p class="fs-5 mb-4" style="color: var(--text-secondary); line-height: 1.7; max-width: 560px;">
+                    Upload your e-waste image, let AI identify it, discover nearby recycling centers, and earn Eco-Credits. Join the movement to restore our planet.
+                </p>
+                <div class="d-flex flex-wrap gap-3">
+                    <a href="{{ url_for('register') }}" class="btn btn-success btn-lg">
+                        <i class="bi bi-rocket-takeoff me-2"></i>Get Started
+                    </a>
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-success btn-lg">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Login
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-5 d-none d-lg-block text-center mt-4 mt-lg-0">
+                <div style="font-size: 8rem; opacity: 0.3; filter: drop-shadow(0 0 40px rgba(65, 222, 253, 0.3));">
+                    <i class="bi bi-cpu"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="stats-grid fade-in">
+    <div class="stat-card">
+        <span class="stat-value">12,450+</span>
+        <span class="stat-label">Items Recycled</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value">3,200+</span>
+        <span class="stat-label">Active Users</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value">89%</span>
+        <span class="stat-label">AI Accuracy</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value">Live</span>
+        <span class="stat-label">Recycler Search</span>
+    </div>
+</div>
+
+<h3 class="text-center mb-1 mt-5 fade-in" style="font-family: var(--font-display);">
+    Ecosystem Core Units
+</h3>
+<p class="text-center mb-4 fade-in" style="color: var(--text-secondary); font-size: 0.95rem;">
+    Our specialized modules handle the entire lifecycle of electronic mineral recovery.
+</p>
+
+<div class="features-grid fade-in">
+    <div class="feature-card">
+        <span class="feature-icon">🔬</span>
+        <h5>AI Scanner</h5>
+        <p>Identify e-waste instantly with our advanced vision AI. Point, shoot, and let our neural network classify your hardware components with high precision.</p>
+    </div>
+    <div class="feature-card">
+        <span class="feature-icon">💎</span>
+        <h5>Eco-Credits</h5>
+        <p>Earn digital rewards for every item recycled responsibly. Convert your credits into real-world value or digital ecosystem perks.</p>
+    </div>
+    <div class="feature-card">
+        <span class="feature-icon">📍</span>
+        <h5>Live Recycler Finder</h5>
+        <p>Automatically find real recycling centers near you using live location data. No pre-loaded lists — real-time results powered by OpenStreetMap.</p>
+    </div>
+    <div class="feature-card">
+        <span class="feature-icon">🏆</span>
+        <h5>Leaderboard</h5>
+        <p>Compete with your community to be the top eco-warrior. Climb the ranks and showcase your environmental commitment.</p>
+    </div>
+</div>
+
+<div class="text-center mt-5 mb-4 fade-in">
+    <div class="card" style="max-width: 600px; margin: 0 auto;">
+        <div class="card-body py-4 px-4">
+            <h4 class="mb-2"><i class="bi bi-arrow-right-circle me-2" style="color: var(--neon);"></i>Start Your Journey Today</h4>
+            <p class="mb-3" style="color: var(--text-secondary);">
+                Join thousands of users already turning e-waste into eco-credits.
+            </p>
+            <a href="{{ url_for('register') }}" class="btn btn-success">
+                <i class="bi bi-person-plus me-2"></i>Create Free Account
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
