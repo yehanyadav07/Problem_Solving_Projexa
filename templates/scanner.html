@@ -1,0 +1,550 @@
+{% extends "base.html" %}
+{% block title %}AI Scanner — Smart E-Waste{% endblock %}
+
+{% block content %}
+<style>
+#confirmWidget select,
+#confirmWidget select option {
+    background-color: #141a25;
+    color: #eaedfb;
+}
+#confirmWidget select optgroup {
+    background-color: #0f131d;
+    color: #a7abb8;
+    font-weight: 600;
+}
+</style>
+<div class="scanning-overlay" id="scanningOverlay">
+    <div class="text-center">
+        <div class="scanning-spinner"></div>
+        <p class="scan-text mt-3">
+            <i class="bi bi-cpu me-2"></i>Analyzing E-Waste...
+        </p>
+        <p style="color: var(--text-secondary); font-size: 0.85rem;">Our AI is identifying your item</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-5 fade-in">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-1">
+                    <i class="bi bi-cpu me-2" style="color: var(--neon);"></i>Smart AI Scanner
+                </h4>
+                <p class="text-muted mb-3" style="font-size: 0.9rem;">Upload an image of e-waste for AI-powered identification.</p>
+                <form method="post" enctype="multipart/form-data" id="scannerForm">
+                    <div class="scanner-upload-area mb-3" id="uploadArea" onclick="document.getElementById('fileInput').click();">
+                        <span class="upload-icon">📸</span>
+                        <p class="mb-1" style="color: var(--text); font-weight: 500;">Drop image or click to upload</p>
+                        <p class="small mb-0" style="color: var(--muted);">Supports PNG, JPG, JPEG, WEBP</p>
+                        <input type="file" class="d-none" id="fileInput" name="ewaste_image" accept=".png,.jpg,.jpeg,.webp" required>
+                    </div>
+                    <div id="previewContainer" class="mb-3 d-none">
+                        <img id="imagePreview" src="" alt="Preview" class="uploaded-preview mb-2">
+                        <p class="small mb-0" style="color: var(--neon);"><i class="bi bi-check-circle me-1"></i>Image ready for analysis</p>
+                    </div>
+                    <input type="hidden" id="latitude" name="latitude">
+                    <input type="hidden" id="longitude" name="longitude">
+                    <button type="submit" class="btn btn-success w-100 btn-lg" id="analyzeBtn">
+                        <i class="bi bi-lightning-charge me-2"></i>Analyze Item
+                    </button>
+                </form>
+
+                <div class="mt-4 p-3" style="background: rgba(160, 142, 255, 0.06); border-radius: var(--radius-lg); border: 1px solid rgba(160, 142, 255, 0.12);">
+                    <h6 style="font-size: 0.82rem; color: var(--neon-2); font-weight: 600;">
+                        <i class="bi bi-lightbulb me-1"></i>Tips for Better Results
+                    </h6>
+                    <ul class="mb-0" style="font-size: 0.82rem; color: var(--text-secondary); padding-left: 1.2rem;">
+                        <li>Use a well-lit, clear photo</li>
+                        <li>Center the item in the frame</li>
+                        <li>Avoid blurry or dark images</li>
+                        <li>Show the full item, not just a part</li>
+                    </ul>
+                </div>
+
+                <div class="mt-3 p-3" style="background: rgba(0, 236, 154, 0.04); border-radius: var(--radius-lg); border: 1px solid rgba(0, 236, 154, 0.1);">
+                    <h6 style="font-size: 0.82rem; color: var(--neon-3); font-weight: 600;">
+                        <i class="bi bi-geo-alt me-1"></i>Location Status
+                    </h6>
+                    <p class="mb-0" style="font-size: 0.82rem; color: var(--text-secondary);" id="locationStatus">
+                        <span class="status-dot pending"></span> Detecting your location...
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7 fade-in">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-3">
+                    <i class="bi bi-bar-chart-line me-2" style="color: var(--neon-2);"></i>Prediction & Recommendations
+                </h4>
+
+                {% if result %}
+                    {% if uploaded_image %}
+                        <img src="{{ url_for('uploaded_file', filename=uploaded_image) }}"
+                             alt="Uploaded item"
+                             class="uploaded-preview mb-3"
+                             onerror="this.style.display='none'">
+                    {% endif %}
+
+                    <div class="prediction-result mb-3">
+                        <div class="row align-items-center">
+                            <div class="col-sm-6">
+                                <p class="mb-1" style="font-size: 0.78rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em;">Predicted Item</p>
+                                <h4 class="mb-0" style="color: var(--neon); font-family: var(--font-display);">
+                                    <i class="bi bi-cpu me-2"></i>{{ result.item_type }}
+                                </h4>
+                            </div>
+                            <div class="col-sm-3">
+                                <p class="mb-1" style="font-size: 0.78rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em;">Eco-Credits</p>
+                                <h4 class="mb-0" style="color: var(--neon-3); font-family: var(--font-display);">
+                                    +{{ result.credits }}
+                                </h4>
+                            </div>
+                            {% if result.confidence is defined %}
+                            <div class="col-sm-3">
+                                <p class="mb-1" style="font-size: 0.78rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em;">Confidence</p>
+                                <h4 class="mb-0" style="color: var(--neon-2); font-family: var(--font-display);">
+                                    {{ result.confidence }}%
+                                </h4>
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill" style="{{ 'width: ' ~ result.confidence ~ '%;' }}"></div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if result.description is defined and result.description %}
+                    <div class="mb-3 p-3" style="background: rgba(65, 222, 253, 0.04); border-radius: var(--radius-lg); border: 1px solid rgba(65, 222, 253, 0.1);">
+                        <h6 style="font-size: 0.82rem; color: var(--neon); font-weight: 600;">
+                            <i class="bi bi-info-circle me-1"></i>AI Analysis
+                        </h6>
+                        <p class="mb-0" style="font-size: 0.88rem; color: var(--text-secondary);">{{ result.description }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if result.environmental_impact is defined and result.environmental_impact %}
+                    <div class="mb-3 p-3" style="background: rgba(0, 236, 154, 0.04); border-radius: var(--radius-lg); border: 1px solid rgba(0, 236, 154, 0.1);">
+                        <h6 style="font-size: 0.82rem; color: var(--neon-3); font-weight: 600;">
+                            <i class="bi bi-tree me-1"></i>Environmental Impact
+                        </h6>
+                        <p class="mb-0" style="font-size: 0.88rem; color: var(--text-secondary);">{{ result.environmental_impact }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if result.is_ewaste %}
+                    <!-- ── CONFIRMATION WIDGET ── -->
+                    <div id="confirmWidget" class="mt-4">
+
+                        <!-- Step 1: Is AI correct? -->
+                        <div id="step1" class="p-3 mb-2" style="background: rgba(160,142,255,0.07); border-radius: var(--radius-lg); border: 1px solid rgba(160,142,255,0.18);">
+                            <h6 style="color: var(--neon-2); font-size: 0.88rem; font-weight: 600; margin-bottom: 0.5rem;">
+                                <i class="bi bi-patch-question me-1"></i>Is this identification correct?
+                            </h6>
+                            <p class="mb-3" style="font-size: 0.88rem; color: var(--text-secondary);">
+                                Our AI identified this as <strong style="color: var(--neon);">{{ result.item_type }}</strong>. Does that look right?
+                            </p>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-success" onclick="confirmStep1(true)">
+                                    <i class="bi bi-check-circle me-1"></i>Yes, correct
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="confirmStep1(false)">
+                                    <i class="bi bi-x-circle me-1"></i>No, it's something else
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Correction selector (hidden by default) -->
+                        <div id="step2" class="d-none p-3 mb-2" style="background: rgba(255,100,100,0.05); border-radius: var(--radius-lg); border: 1px solid rgba(255,100,100,0.15);">
+                            <h6 style="color: #ff6b6b; font-size: 0.88rem; font-weight: 600; margin-bottom: 0.6rem;">
+                                <i class="bi bi-ui-checks me-1"></i>Select the correct device type
+                            </h6>
+                            <select id="deviceTypeSelect" class="form-select form-select-sm mb-3" style="background: var(--card); color: var(--text); border-color: rgba(255,255,255,0.1);" onchange="onDeviceSelected()">
+                                <option value="">— Choose a device —</option>
+                                <optgroup label="📱 Mobile &amp; Wearables">
+                                    <option>Smartphone</option>
+                                    <option>Tablet</option>
+                                    <option>Smartwatch</option>
+                                    <option>Fitness Tracker</option>
+                                    <option>E-Reader</option>
+                                    <option>Feature Phone</option>
+                                </optgroup>
+                                <optgroup label="💻 Computers">
+                                    <option>Laptop</option>
+                                    <option>Desktop Computer</option>
+                                    <option>All-in-One PC</option>
+                                    <option>Chromebook</option>
+                                    <option>Mini PC</option>
+                                    <option>Server / Rack Unit</option>
+                                </optgroup>
+                                <optgroup label="🖥️ Peripherals">
+                                    <option>Monitor</option>
+                                    <option>Keyboard</option>
+                                    <option>Mouse</option>
+                                    <option>Webcam</option>
+                                    <option>External Hard Drive</option>
+                                    <option>USB Hub / Docking Station</option>
+                                    <option>Graphics Card</option>
+                                    <option>RAM / Memory Module</option>
+                                    <option>Optical Drive</option>
+                                </optgroup>
+                                <optgroup label="🎧 Audio / Video">
+                                    <option>Headphones</option>
+                                    <option>Earbuds / AirPods</option>
+                                    <option>Bluetooth Speaker</option>
+                                    <option>Soundbar</option>
+                                    <option>Smart TV</option>
+                                    <option>CRT Television</option>
+                                    <option>Projector</option>
+                                    <option>Streaming Stick</option>
+                                    <option>Set-Top Box</option>
+                                </optgroup>
+                                <optgroup label="📷 Photography &amp; Drones">
+                                    <option>Digital Camera</option>
+                                    <option>DSLR / Mirrorless Camera</option>
+                                    <option>Action Camera</option>
+                                    <option>Drone</option>
+                                    <option>Camcorder</option>
+                                </optgroup>
+                                <optgroup label="🎮 Gaming">
+                                    <option>Gaming Console</option>
+                                    <option>Game Controller</option>
+                                    <option>VR Headset</option>
+                                    <option>Handheld Game Console</option>
+                                </optgroup>
+                                <optgroup label="🏠 Home &amp; Kitchen">
+                                    <option>Microwave</option>
+                                    <option>Electric Kettle</option>
+                                    <option>Hair Dryer</option>
+                                    <option>Hair Straightener</option>
+                                    <option>Electric Shaver / Trimmer</option>
+                                    <option>Smart Thermostat</option>
+                                    <option>Robot Vacuum</option>
+                                    <option>Electric Toothbrush</option>
+                                    <option>Air Purifier</option>
+                                </optgroup>
+                                <optgroup label="🌐 Networking">
+                                    <option>Router</option>
+                                    <option>Modem</option>
+                                    <option>Network Switch</option>
+                                    <option>Range Extender / Repeater</option>
+                                </optgroup>
+                                <optgroup label="🔋 Power &amp; Cables">
+                                    <option>Battery Pack / Power Bank</option>
+                                    <option>Laptop Charger / Adapter</option>
+                                    <option>Phone Charger</option>
+                                    <option>Solar Panel</option>
+                                    <option>UPS / Inverter</option>
+                                    <option>Cables / Wires</option>
+                                </optgroup>
+                                <optgroup label="🏥 Medical">
+                                    <option>Blood Pressure Monitor</option>
+                                    <option>Glucometer</option>
+                                    <option>Digital Thermometer</option>
+                                    <option>Hearing Aid</option>
+                                    <option>TENS / Physiotherapy Device</option>
+                                </optgroup>
+                                <optgroup label="🖨️ Office">
+                                    <option>Printer</option>
+                                    <option>Scanner</option>
+                                    <option>Fax Machine</option>
+                                    <option>Landline / Cordless Phone</option>
+                                    <option>Calculator</option>
+                                </optgroup>
+                                <optgroup label="🔧 Other">
+                                    <option>Smart Home Hub / Speaker</option>
+                                    <option>Electric Toy / RC Vehicle</option>
+                                    <option>Walkie Talkie</option>
+                                    <option>GPS Device</option>
+                                    <option>Other Electronic Device</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <!-- Step 3: Details form (hidden until step 1/2 resolved) -->
+                        <div id="step3" class="d-none p-3" style="background: rgba(65,222,253,0.04); border-radius: var(--radius-lg); border: 1px solid rgba(65,222,253,0.12);">
+                            <h6 style="color: var(--neon); font-size: 0.88rem; font-weight: 600; margin-bottom: 0.8rem;">
+                                <i class="bi bi-clipboard2-check me-1"></i>Tell us a bit more
+                            </h6>
+                            <div class="row g-2 mb-2">
+                                <div class="col-sm-6">
+                                    <label class="form-label" style="font-size: 0.78rem; color: var(--text-secondary);">Condition</label>
+                                    <select id="q_condition" class="form-select form-select-sm" style="background: var(--card); color: var(--text); border-color: rgba(255,255,255,0.1);">
+                                        <option value="working">✅ Fully Working</option>
+                                        <option value="partial">⚠️ Partially Working</option>
+                                        <option value="broken">❌ Broken / Not Powering On</option>
+                                        <option value="unknown">❓ Not Sure</option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label" style="font-size: 0.78rem; color: var(--text-secondary);">Approximate Age</label>
+                                    <select id="q_age" class="form-select form-select-sm" style="background: var(--card); color: var(--text); border-color: rgba(255,255,255,0.1);">
+                                        <option value="lt1">Less than 1 year</option>
+                                        <option value="1to3">1 – 3 years</option>
+                                        <option value="3to5">3 – 5 years</option>
+                                        <option value="5to10">5 – 10 years</option>
+                                        <option value="gt10">More than 10 years</option>
+                                        <option value="unknown">Not sure</option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label" style="font-size: 0.78rem; color: var(--text-secondary);">Number of Items</label>
+                                    <select id="q_qty" class="form-select form-select-sm" style="background: var(--card); color: var(--text); border-color: rgba(255,255,255,0.1);">
+                                        <option value="1">1 item</option>
+                                        <option value="2">2 items</option>
+                                        <option value="3">3 items</option>
+                                        <option value="4_5">4 – 5 items</option>
+                                        <option value="6_10">6 – 10 items</option>
+                                        <option value="10plus">More than 10</option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label" style="font-size: 0.78rem; color: var(--text-secondary);">Data / Memory Wiped?</label>
+                                    <select id="q_wiped" class="form-select form-select-sm" style="background: var(--card); color: var(--text); border-color: rgba(255,255,255,0.1);">
+                                        <option value="yes">Yes, all data cleared</option>
+                                        <option value="no">No, data still on device</option>
+                                        <option value="na">Not applicable</option>
+                                        <option value="unknown">Not sure</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" style="font-size: 0.78rem; color: var(--text-secondary);">Anything else we should know? <span style="color: var(--muted);">(optional)</span></label>
+                                <textarea id="q_notes" class="form-control form-control-sm" rows="2" maxlength="300" placeholder="e.g. cracked screen, missing battery, original box included, brand/model number…" style="background: var(--card); color: var(--text); border-color: rgba(255,255,255,0.1); font-size: 0.85rem; resize: none;"></textarea>
+                            </div>
+                            <button class="btn btn-success w-100" onclick="confirmDetails()">
+                                <i class="bi bi-check2-circle me-2"></i>Confirm &amp; Find Recyclers
+                            </button>
+                        </div>
+
+                        <!-- Confirmed summary (shown after confirmDetails) -->
+                        <div id="confirmedBanner" class="d-none p-3 mb-2" style="background: rgba(0,236,154,0.07); border-radius: var(--radius-lg); border: 1px solid rgba(0,236,154,0.2);">
+                            <p class="mb-0" style="font-size: 0.88rem; color: var(--neon-3);">
+                                <i class="bi bi-check-circle-fill me-1"></i>
+                                Details confirmed — showing nearby recyclers for <strong id="confirmedLabel"></strong>.
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- ── RECYCLING CENTERS (hidden until confirmed) ── -->
+                    <div id="recyclersSection" class="d-none">
+                        <h6 class="mb-3 mt-4">
+                            <i class="bi bi-geo-alt me-2" style="color: var(--neon-3);"></i>Nearest Recycling Centers
+                        </h6>
+                        {% if user_coords %}
+                            <p class="small text-muted mb-3">
+                                <i class="bi bi-broadcast me-1"></i>Live results from OpenStreetMap based on your detected location (GPS or IP).
+                            </p>
+                        {% endif %}
+                        {% if centers %}
+                            {% for center in centers %}
+                                <div class="soft-panel p-3 mb-3 fade-in">
+                                    <div class="d-flex justify-content-between align-items-start flex-wrap">
+                                        <div>
+                                            <h6 class="mb-1">
+                                                <i class="bi bi-building me-1" style="color: var(--neon); opacity: 0.7;"></i>{{ center.name }}
+                                            </h6>
+                                            <p class="mb-1 text-muted small">
+                                                <i class="bi bi-pin-map me-1"></i>{{ center.location }}
+                                            </p>
+                                            {% if center.distance_km is defined %}
+                                                <p class="mb-0 small" style="color: var(--neon-3);">
+                                                    <i class="bi bi-signpost-split me-1"></i>{{ center.distance_km }} km away
+                                                </p>
+                                            {% endif %}
+                                            {% if center.accepted_items is defined %}
+                                                <p class="mb-0 small text-muted mt-1">
+                                                    <i class="bi bi-tag me-1"></i>{{ center.accepted_items }}
+                                                </p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-2 mt-2">
+                                        <a class="btn btn-outline-primary btn-sm"
+                                           href="https://www.google.com/maps/search/?api=1&query={{ center.latitude }},{{ center.longitude }}"
+                                           target="_blank" rel="noopener">
+                                            <i class="bi bi-map me-1"></i>View on Map
+                                        </a>
+                                        <form method="post" action="{{ url_for('schedule_pickup_dynamic') }}" class="pickup-form">
+                                            <input type="hidden" name="item_type" class="field-item-type" value="{{ result.item_type }}">
+                                            <input type="hidden" name="credits" value="{{ result.credits }}">
+                                            <input type="hidden" name="center_name" value="{{ center.name }}">
+                                            <input type="hidden" name="center_location" value="{{ center.location }}">
+                                            <input type="hidden" name="center_lat" value="{{ center.latitude }}">
+                                            <input type="hidden" name="center_lon" value="{{ center.longitude }}">
+                                            <input type="hidden" name="osm_id" value="{{ center.osm_id }}">
+                                            <button type="submit" class="btn btn-outline-success btn-sm">
+                                                <i class="bi bi-truck me-1"></i>Schedule Pickup
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% elif user_coords %}
+                            <div class="text-center py-4">
+                                <i class="bi bi-geo-alt" style="font-size: 2.5rem; color: var(--muted); opacity: 0.3;"></i>
+                                <p class="text-muted mt-2 mb-0">No recycling centers found near your location. Try expanding the search radius.</p>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="bi bi-geo-alt-fill" style="font-size: 2.5rem; color: var(--error); opacity: 0.4;"></i>
+                                <p class="text-muted mt-2 mb-1">Location not detected.</p>
+                                <p class="small text-muted mb-0">Please allow location access in your browser to find nearby recyclers.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <div style="font-size: 4rem; opacity: 0.15; color: var(--neon);">
+                            <i class="bi bi-cpu"></i>
+                        </div>
+                        <p class="text-muted mt-3 mb-0">No prediction yet. Upload an image to begin AI analysis.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    var locationReady = false;
+    var locationStatus = document.getElementById('locationStatus');
+
+    function setLocation(lat, lon, label) {
+        document.getElementById("latitude").value = lat;
+        document.getElementById("longitude").value = lon;
+        locationReady = true;
+        locationStatus.innerHTML = '<span class="status-dot active"></span> ' + label;
+    }
+
+    function tryIpGeolocation() {
+        locationStatus.innerHTML = '<span class="status-dot pending"></span> GPS unavailable — trying IP location...';
+        fetch('/api/geolocate')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.lat && data.lon) {
+                    var place = data.city ? data.city + (data.country ? ', ' + data.country : '') : 'approximate location';
+                    setLocation(data.lat, data.lon, 'Location detected via IP &mdash; ' + place + ' <small style="color:var(--muted)">(approximate)</small>');
+                } else {
+                    locationStatus.innerHTML = '<span class="status-dot inactive"></span> Location unavailable — allow GPS or check network';
+                }
+            })
+            .catch(function() {
+                locationStatus.innerHTML = '<span class="status-dot inactive"></span> Location unavailable';
+            });
+    }
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                setLocation(
+                    position.coords.latitude,
+                    position.coords.longitude,
+                    'GPS location detected (' + position.coords.latitude.toFixed(4) + ', ' + position.coords.longitude.toFixed(4) + ')'
+                );
+            },
+            function(err) {
+                tryIpGeolocation();
+            },
+            { timeout: 8000 }
+        );
+    } else {
+        tryIpGeolocation();
+    }
+
+    var fileInput = document.getElementById('fileInput');
+    var uploadArea = document.getElementById('uploadArea');
+    var previewContainer = document.getElementById('previewContainer');
+    var imagePreview = document.getElementById('imagePreview');
+
+    fileInput.addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        if (file) {
+            var reader = new FileReader();
+            reader.onload = function(ev) {
+                imagePreview.src = ev.target.result;
+                previewContainer.classList.remove('d-none');
+                uploadArea.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadArea.style.borderColor = 'rgba(65, 222, 253, 0.6)';
+        uploadArea.style.background = 'rgba(65, 222, 253, 0.08)';
+    });
+
+    uploadArea.addEventListener('dragleave', function() {
+        uploadArea.style.borderColor = '';
+        uploadArea.style.background = '';
+    });
+
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadArea.style.borderColor = '';
+        uploadArea.style.background = '';
+        if (e.dataTransfer.files.length) {
+            fileInput.files = e.dataTransfer.files;
+            fileInput.dispatchEvent(new Event('change'));
+        }
+    });
+
+    document.getElementById('scannerForm').addEventListener('submit', function() {
+        document.getElementById('scanningOverlay').classList.add('active');
+    });
+
+    // ── Confirmation flow ──────────────────────────────────────────
+    var confirmedItemType = "{{ result.item_type|replace('\"', '\\\"') if result else '' }}";
+
+    function confirmStep1(isCorrect) {
+        document.getElementById('step1').classList.add('d-none');
+        if (isCorrect) {
+            document.getElementById('step3').classList.remove('d-none');
+        } else {
+            document.getElementById('step2').classList.remove('d-none');
+        }
+    }
+
+    function onDeviceSelected() {
+        var val = document.getElementById('deviceTypeSelect').value;
+        if (val) {
+            confirmedItemType = val;
+            document.getElementById('step3').classList.remove('d-none');
+        }
+    }
+
+    function confirmDetails() {
+        var condition = document.getElementById('q_condition').value;
+        var age       = document.getElementById('q_age').value;
+        var qty       = document.getElementById('q_qty').value;
+        var wiped     = document.getElementById('q_wiped').value;
+        var notes     = document.getElementById('q_notes').value.trim();
+
+        var details = " (Condition: " + condition + ", Qty: " + qty + ")";
+        if (notes) details += " - " + notes;
+
+        // Update all pickup form item_type fields with confirmed type and details
+        document.querySelectorAll('.field-item-type').forEach(function(el) {
+            el.value = confirmedItemType + details;
+        });
+
+        // Hide the widget, show the confirmed banner and recyclers
+        document.getElementById('step2').classList.add('d-none');
+        document.getElementById('step3').classList.add('d-none');
+        document.getElementById('confirmedLabel').textContent = confirmedItemType;
+        document.getElementById('confirmedBanner').classList.remove('d-none');
+        document.getElementById('recyclersSection').classList.remove('d-none');
+
+        // Scroll to recyclers
+        document.getElementById('recyclersSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+</script>
+{% endblock %}
