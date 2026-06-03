@@ -1,0 +1,6 @@
+flask
+flask-sqlalchemy
+werkzeug
+python-dotenv
+google-generativeai
+requests
