@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Register — Smart E-Waste{% endblock %}
+{% block content %}
+<div class="row justify-content-center py-4 fade-in">
+    <div class="col-md-6 col-lg-5 col-xl-4">
+        <div class="card">
+            <div class="card-body p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <div style="font-size: 2.5rem; margin-bottom: 0.5rem; filter: drop-shadow(0 0 15px rgba(160, 142, 255, 0.3));">
+                        <i class="bi bi-person-plus" style="color: var(--neon-2);"></i>
+                    </div>
+                    <h3 class="mb-1" style="font-family: var(--font-display);">Join the Movement</h3>
+                    <p class="text-muted mb-0" style="font-size: 0.88rem;">Create your eco-warrior account</p>
+                </div>
+                <form method="post" autocomplete="off" id="registerForm">
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text" style="background: var(--surface-container-highest); border-color: var(--ghost-border); color: var(--muted);"><i class="bi bi-person"></i></span>
+                            <input type="text" name="username" class="form-control" placeholder="Choose a username" autocomplete="off" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <div class="input-group">
+                            <span class="input-group-text" style="background: var(--surface-container-highest); border-color: var(--ghost-border); color: var(--muted);"><i class="bi bi-envelope"></i></span>
+                            <input type="email" name="email" class="form-control" placeholder="you@example.com" autocomplete="off" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text" style="background: var(--surface-container-highest); border-color: var(--ghost-border); color: var(--muted);"><i class="bi bi-lock"></i></span>
+                            <input type="password" name="password" id="passwordInput" class="form-control" placeholder="Create a strong password" autocomplete="new-password" required>
+                        </div>
+                        <div class="form-text mt-2"><i class="bi bi-shield-check me-1"></i>Use 8+ chars with uppercase, lowercase, number, and special character.</div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex gap-1">
+                            <div id="strength1" style="height: 3px; flex: 1; border-radius: 2px; background: var(--surface-container-highest);"></div>
+                            <div id="strength2" style="height: 3px; flex: 1; border-radius: 2px; background: var(--surface-container-highest);"></div>
+                            <div id="strength3" style="height: 3px; flex: 1; border-radius: 2px; background: var(--surface-container-highest);"></div>
+                            <div id="strength4" style="height: 3px; flex: 1; border-radius: 2px; background: var(--surface-container-highest);"></div>
+                        </div>
+                        <p id="strengthText" class="small mt-1 mb-0" style="color: var(--muted); font-size: 0.75rem;"></p>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">Confirm Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text" style="background: var(--surface-container-highest); border-color: var(--ghost-border); color: var(--muted);"><i class="bi bi-lock-fill"></i></span>
+                            <input type="password" id="confirmPassword" class="form-control" placeholder="Re-enter your password" autocomplete="new-password" required>
+                        </div>
+                        <p id="matchText" class="small mt-1 mb-0" style="font-size: 0.75rem;"></p>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100 btn-lg" id="submitBtn"><i class="bi bi-rocket-takeoff me-2"></i>Create Account</button>
+                </form>
+                <div class="text-center mt-4">
+                    <p class="mb-0" style="font-size: 0.9rem;">Already registered? <a href="{{ url_for('login') }}" style="font-weight: 600;">Login</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    var passwordInput = document.getElementById('passwordInput');
+    var confirmPassword = document.getElementById('confirmPassword');
+    var bars = [document.getElementById('strength1'), document.getElementById('strength2'), document.getElementById('strength3'), document.getElementById('strength4')];
+    var strengthText = document.getElementById('strengthText');
+    var matchText = document.getElementById('matchText');
+    var submitBtn = document.getElementById('submitBtn');
+    var registerForm = document.getElementById('registerForm');
+
+    function checkPasswordStrength(val) {
+        var score = 0;
+        if (val.length >= 8) score++;
+        if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
+        if (/\d/.test(val)) score++;
+        if (/[!@#$%^&*()\-_+=\[\]{};:,.?\\|`~]/.test(val)) score++;
+        return score;
+    }
+
+    function checkPasswordMatch() {
+        var pw = passwordInput.value;
+        var cpw = confirmPassword.value;
+        if (cpw.length === 0) {
+            matchText.textContent = '';
+            return false;
+        }
+        if (pw === cpw) {
+            matchText.textContent = 'Passwords match';
+            matchText.style.color = '#9effc8';
+            confirmPassword.setCustomValidity('');
+            return true;
+        } else {
+            matchText.textContent = 'Passwords do not match';
+            matchText.style.color = '#ff716c';
+            confirmPassword.setCustomValidity('Passwords do not match');
+            return false;
+        }
+    }
+
+    passwordInput.addEventListener('input', function() {
+        var val = this.value;
+        var score = checkPasswordStrength(val);
+        var colors = ['#ff716c', '#f5a623', '#41defd', '#9effc8'];
+        var labels = ['Weak', 'Fair', 'Good', 'Strong'];
+        bars.forEach(function(bar, i) {
+            bar.style.background = i < score ? colors[Math.min(score - 1, 3)] : 'var(--surface-container-highest)';
+            bar.style.transition = 'background 0.3s ease';
+        });
+        strengthText.textContent = val.length > 0 ? labels[Math.max(score - 1, 0)] : '';
+        strengthText.style.color = val.length > 0 ? colors[Math.max(score - 1, 0)] : 'var(--muted)';
+        if (confirmPassword.value.length > 0) checkPasswordMatch();
+    });
+
+    confirmPassword.addEventListener('input', checkPasswordMatch);
+
+    registerForm.addEventListener('submit', function(e) {
+        if (!checkPasswordMatch()) {
+            e.preventDefault();
+            confirmPassword.focus();
+        }
+    });
+</script>
+{% endblock %}
